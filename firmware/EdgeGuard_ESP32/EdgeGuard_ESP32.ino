@@ -166,6 +166,7 @@ void updateControl(const SensorSnapshot& sensor) {
 
   static bool temperatureAlertLatched = false;
   static uint32_t lastOccupiedMs = 0;
+  static bool hasEverSeenOccupancy = false;
 
   static State previousState = State::BOOT;
   static bool previousRelay1 = false;
@@ -209,10 +210,13 @@ void updateControl(const SensorSnapshot& sensor) {
   bool instantOccupied = sensor.distanceOk && sensor.distanceCm > 0 && sensor.distanceCm <= OCCUPIED_DISTANCE_CM;
 
   if (instantOccupied) {
-    lastOccupiedMs = millis();
-  }
+  lastOccupiedMs = millis();
+  hasEverSeenOccupancy = true;
+  } 
 
-  bool occupiedHeld = instantOccupied || ((millis() - lastOccupiedMs) < UNOCCUPIED_TIMEOUT_MS);
+  bool occupiedHeld =
+    instantOccupied ||
+    (hasEverSeenOccupancy && ((millis() - lastOccupiedMs) < UNOCCUPIED_TIMEOUT_MS));
 
   if (sensor.dhtOk) {
     if (sensor.temperatureC >= TEMP_ALERT_ON_C) {

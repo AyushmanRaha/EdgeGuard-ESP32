@@ -22,11 +22,11 @@ constexpr bool RELAY_ACTIVE_LOW = true;
 
 // LDR digital modules vary.
 // If dashboard shows DARK when the room is bright, flip this value.
-constexpr bool LDR_DARK_WHEN_HIGH = false;
+constexpr bool LDR_DARK_WHEN_HIGH = true;
 
 // -------------------- SENSOR THRESHOLDS --------------------
-constexpr uint16_t OCCUPIED_DISTANCE_CM = 120;
-constexpr uint32_t UNOCCUPIED_TIMEOUT_MS = 15000;
+constexpr uint16_t OCCUPIED_DISTANCE_CM = 40;
+constexpr uint32_t UNOCCUPIED_TIMEOUT_MS = 5000;
 
 constexpr float TEMP_ALERT_ON_C = 35.0;
 constexpr float TEMP_ALERT_OFF_C = 33.0;
