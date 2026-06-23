@@ -1,5 +1,40 @@
 # Troubleshooting
 
+## Upload fails with `A fatal error occurred: The chip stopped responding`
+
+This usually means the build succeeded and the ESP32 started flashing, but the serial connection dropped before the main firmware image finished writing.
+
+Typical signs:
+
+- Arduino IDE reports sketch size successfully.
+- esptool connects to the ESP32.
+- Bootloader and partition images write and verify.
+- Failure happens while writing the large application `.bin` at `0x00010000`.
+- The log ends with `StopIteration`, `The chip stopped responding`, or `Failed uploading`.
+
+Most likely causes:
+
+- Upload speed is too high for the USB-serial adapter or cable.
+- USB cable is charge-only, too long, or unreliable.
+- ESP32 is connected through a weak USB hub.
+- Breadboard wiring is loose.
+- Relay/sensor modules are drawing power from the ESP32 USB supply during flashing.
+- The board auto-reset circuit is unreliable and needs manual `BOOT` help.
+- Another app, such as Serial Monitor, is holding the serial port.
+
+Recovery checklist:
+
+1. Close Serial Monitor and any other serial terminal.
+2. Use a short data-capable USB cable.
+3. Plug directly into the Mac, not through a hub.
+4. In Arduino IDE, set Upload Speed to `115200`.
+5. Start upload. If it sticks at `Connecting...`, hold `BOOT` until writing starts, then release it.
+6. If it drops mid-upload, unplug the ESP32, wait a few seconds, and try again at `115200`.
+7. If still unstable, disconnect external relay/sensor VCC wires while the board is unpowered, upload to the bare ESP32, then reconnect the low-voltage circuit with power removed.
+8. After upload, press `EN`/reset and open Serial Monitor at `115200`.
+
+For PlatformIO, the repo uses a conservative `upload_speed = 115200` in `platformio.ini`.
+
 ## DHT error
 
 - Confirm DHT11 data is on GPIO 4.
