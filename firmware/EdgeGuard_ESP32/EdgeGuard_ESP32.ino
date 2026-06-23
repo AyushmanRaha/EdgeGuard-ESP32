@@ -15,6 +15,8 @@ SemaphoreHandle_t gMutex;
 
 ControlConfig gControlConfig;
 ControlContext gControlContext;
+SensorSnapshot gSensor;
+SystemSnapshot gSystem;
 
 EdgeGuardEventLog gEventLog;
 
