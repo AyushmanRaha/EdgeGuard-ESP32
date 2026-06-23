@@ -33,4 +33,14 @@ All routes are served by the ESP32 local web server. Normal command responses re
 - `wifi_mode`: `STA` or `AP`.
 - `ip`: current dashboard IP address.
 - `heap_free`: free heap bytes.
+- `firmware_name`, `firmware_version`, `build_label`: firmware metadata.
+- `sensor_stale`: true when the latest sensor snapshot is older than the configured stale timeout.
+- `dht_consecutive_failures`, `ultrasonic_consecutive_failures`: current bounded consecutive sensor failure counters.
+- `dht_total_failures`, `ultrasonic_total_failures`: total sensor failure counters since boot.
+- `last_dht_ok_ms`, `last_distance_ok_ms`: last successful sensor read timestamps from `millis()`.
+- `task_sensor_heartbeat_ms`, `task_control_heartbeat_ms`, `task_web_heartbeat_ms`, `task_heartbeat_heartbeat_ms`: task loop heartbeat timestamps from `millis()`.
+- `heap_min_free`: minimum observed free heap bytes.
+- `reset_reason`: ESP32 reset reason string when available.
+- `wifi_reconnect_state`: station connection or fallback AP state.
+- `watchdog_enabled`: true when the ESP32 task watchdog was enabled by the selected framework.
 - `rssi`: station RSSI when connected in station mode.

@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include "app_state.h"
+#include "diagnostics.h"
 #if __has_include("secrets.h")
 #include "secrets.h"
 #else
@@ -10,6 +11,7 @@
 void connectWiFiOrStartAP() {
   const String ssid = WIFI_SSID;
   if (ssid.length() > 0 && ssid != "YOUR_WIFI_NAME") {
+    setWiFiDiagnostics("STA", "connecting");
     WiFi.mode(WIFI_STA);
     WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
     Serial.print("Connecting to Wi-Fi");
@@ -19,10 +21,12 @@ void connectWiFiOrStartAP() {
     if (WiFi.status() == WL_CONNECTED) {
       Serial.println("Wi-Fi connected.");
       Serial.print("Dashboard: http://"); Serial.println(WiFi.localIP());
+      setWiFiDiagnostics("STA", "connected");
       logEvent("Wi-Fi connected: " + WiFi.localIP().toString());
       return;
     }
   }
+  setWiFiDiagnostics("AP", "fallback_ap");
   WiFi.mode(WIFI_AP);
   WiFi.softAP("EdgeGuard-ESP32", "edgeguard123");
   Serial.println("Wi-Fi connection failed or not configured.");

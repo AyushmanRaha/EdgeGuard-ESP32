@@ -3,7 +3,9 @@
 #include <WebServer.h>
 #include "app_state.h"
 #include "control.h"
+#include "config.h"
 #include "dashboard.h"
+#include "diagnostics.h"
 #include "web_routes.h"
 
 namespace { WebServer server(80); }
@@ -24,7 +26,9 @@ String buildStatusJson() {
   const bool sensorOk = copySensorSnapshot(sensor);
   const bool systemOk = copySystemSnapshot(sys);
   if (!sensorOk || !systemOk) return "{\"ok\":false,\"error\":\"state_unavailable\"}";
-  String json; json.reserve(560);
+  const DiagnosticsSnapshot diag = getDiagnosticsSnapshot();
+  const bool sensorStale = sensor.timestampMs == 0 || ((millis() - sensor.timestampMs) > SENSOR_STALE_TIMEOUT_MS);
+  String json; json.reserve(1200);
   json += "{\"temperature_c\":"; json += sensor.dhtOk ? String(sensor.temperatureC, 1) : "null";
   json += ",\"humidity\":"; json += sensor.dhtOk ? String(sensor.humidity, 1) : "null";
   json += ",\"dht_ok\":"; json += sensor.dhtOk ? "true" : "false";
@@ -38,10 +42,28 @@ String buildStatusJson() {
   json += ",\"relay2\":"; json += sys.relay2On ? "true" : "false";
   json += ",\"temperature_alert\":"; json += sys.temperatureAlert ? "true" : "false";
   json += ",\"fault_reason\":"; appendJsonString(json, sys.faultReason);
-  json += ",\"uptime_s\":"; json += String(millis() / 1000);
+  json += ",\"uptime_s\":"; json += String(diag.runtime.uptimeSeconds);
+  json += ",\"firmware_name\":\""; json += EDGEGUARD_FIRMWARE_NAME;
+  json += "\",\"firmware_version\":\""; json += EDGEGUARD_FIRMWARE_VERSION;
+  json += "\",\"build_label\":"; appendJsonString(json, EDGEGUARD_BUILD_LABEL);
+  json += ",\"sensor_stale\":"; json += sensorStale ? "true" : "false";
+  json += ",\"dht_consecutive_failures\":"; json += String(diag.sensor.dhtConsecutiveFailures);
+  json += ",\"ultrasonic_consecutive_failures\":"; json += String(diag.sensor.ultrasonicConsecutiveFailures);
+  json += ",\"dht_total_failures\":"; json += String(diag.sensor.dhtTotalFailures);
+  json += ",\"ultrasonic_total_failures\":"; json += String(diag.sensor.ultrasonicTotalFailures);
+  json += ",\"last_dht_ok_ms\":"; json += String(diag.sensor.lastDhtOkMs);
+  json += ",\"last_distance_ok_ms\":"; json += String(diag.sensor.lastDistanceOkMs);
+  json += ",\"task_sensor_heartbeat_ms\":"; json += String(diag.tasks.lastSensorTaskHeartbeatMs);
+  json += ",\"task_control_heartbeat_ms\":"; json += String(diag.tasks.lastControlTaskHeartbeatMs);
+  json += ",\"task_web_heartbeat_ms\":"; json += String(diag.tasks.lastWebTaskHeartbeatMs);
+  json += ",\"task_heartbeat_heartbeat_ms\":"; json += String(diag.tasks.lastHeartbeatTaskHeartbeatMs);
+  json += ",\"heap_min_free\":"; json += String(diag.runtime.minFreeHeap);
+  json += ",\"reset_reason\":"; appendJsonString(json, diag.runtime.resetReason);
+  json += ",\"wifi_reconnect_state\":"; appendJsonString(json, diag.wifi.reconnectState);
+  json += ",\"watchdog_enabled\":"; json += diag.runtime.watchdogEnabled ? "true" : "false";
   json += ",\"wifi_mode\":\""; json += (WiFi.getMode() == WIFI_AP ? "AP" : "STA");
   json += "\",\"ip\":\""; json += (WiFi.getMode() == WIFI_AP ? WiFi.softAPIP().toString() : WiFi.localIP().toString());
-  json += "\",\"heap_free\":"; json += String(ESP.getFreeHeap());
+  json += "\",\"heap_free\":"; json += String(diag.runtime.freeHeap);
   if (WiFi.getMode() == WIFI_STA && WiFi.status() == WL_CONNECTED) { json += ",\"rssi\":"; json += String(WiFi.RSSI()); }
   json += "}"; return json;
 }

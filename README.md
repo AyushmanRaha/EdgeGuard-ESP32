@@ -34,7 +34,7 @@ Modes are `AUTO`, `MANUAL`, and `AWAY`. States are `BOOT`, `CALIBRATING`, `AUTO_
 - `AUTO`: Relay 1 turns on only when the room is dark and occupancy is held; Relay 2 follows the temperature alert latch.
 - `MANUAL`: Relay API commands switch to manual control and immediately apply the requested relay state.
 - `AWAY`: Relay 1 stays off; instant occupancy raises `ALERT` and turns Relay 2 on.
-- `FAULT`: repeated DHT11 or HC-SR04 failures force both relays off.
+- `FAULT`: repeated DHT11 or HC-SR04 failures, or stale sensor snapshots, force both relays off.
 
 ## API
 | Method | Route | Purpose |

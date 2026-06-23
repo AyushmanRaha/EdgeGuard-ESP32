@@ -1,10 +1,10 @@
 #include "control.h"
 #include "app_state.h"
 #include "config.h"
+#include "control_logic.h"
+#include "diagnostics.h"
 
 namespace {
-uint8_t saturatingInc(uint8_t value) { return value < UINT8_MAX ? value + 1 : UINT8_MAX; }
-
 void writeRelayPin(uint8_t pin, bool on) {
   digitalWrite(pin, RELAY_ACTIVE_LOW ? (on ? LOW : HIGH) : (on ? HIGH : LOW));
 }
@@ -32,11 +32,7 @@ void setupPins() {
 }
 
 void updateControl(const SensorSnapshot& sensor) {
-  static uint8_t dhtFailCount = 0;
-  static uint8_t ultrasonicFailCount = 0;
-  static bool temperatureAlertLatched = false;
-  static uint32_t lastOccupiedMs = 0;
-  static bool hasEverSeenOccupancy = false;
+  static ControlMemory memory;
   static State previousState = State::BOOT;
   static bool previousRelay1 = false;
   static bool previousRelay2 = false;
@@ -44,56 +40,38 @@ void updateControl(const SensorSnapshot& sensor) {
   SystemSnapshot sys;
   if (!copySystemSnapshot(sys)) {
     forceRelaysOff();
+    markCriticalFault("Control state unavailable");
+    logEvent("Control state unavailable");
     return;
   }
 
-  dhtFailCount = sensor.dhtOk ? 0 : saturatingInc(dhtFailCount);
-  ultrasonicFailCount = sensor.distanceOk ? 0 : saturatingInc(ultrasonicFailCount);
-
+  const DiagnosticsSnapshot diag = getDiagnosticsSnapshot();
   bool sensorFault = false;
   String faultReason;
-  if (dhtFailCount >= 5) { sensorFault = true; faultReason = "DHT11 failed 5 times"; }
-  if (ultrasonicFailCount >= 5) {
+  if (diag.sensor.dhtConsecutiveFailures >= 5) { sensorFault = true; faultReason = "DHT11 failed 5 times"; }
+  if (diag.sensor.ultrasonicConsecutiveFailures >= 5) {
     sensorFault = true;
     if (faultReason.length() > 0) faultReason += "; ";
     faultReason += "HC-SR04 timeout 5 times";
   }
 
-  const bool instantOccupied = sensor.distanceOk && sensor.distanceCm > 0 && sensor.distanceCm <= OCCUPIED_DISTANCE_CM;
-  if (instantOccupied) { lastOccupiedMs = millis(); hasEverSeenOccupancy = true; }
-  const bool occupiedHeld = instantOccupied || (hasEverSeenOccupancy && ((millis() - lastOccupiedMs) < UNOCCUPIED_TIMEOUT_MS));
-
-  if (sensor.dhtOk) {
-    if (sensor.temperatureC >= TEMP_ALERT_ON_C) temperatureAlertLatched = true;
-    else if (sensor.temperatureC <= TEMP_ALERT_OFF_C) temperatureAlertLatched = false;
-  }
-
-  sys.occupied = occupiedHeld;
-  sys.temperatureAlert = temperatureAlertLatched;
-  sys.faultReason = "";
-  sys.timestampMs = millis();
-
+  ControlDecision decision = computeControlDecision(sensor, sys, memory, millis());
+  sys = decision.system;
   if (sensorFault) {
     sys.state = State::FAULT;
     sys.faultReason = faultReason;
-    sys.relay1On = false; sys.relay2On = false;
-  } else if (sys.mode == Mode::MANUAL) {
-    sys.state = State::MANUAL_OVERRIDE;
-  } else if (sys.mode == Mode::AWAY) {
     sys.relay1On = false;
-    sys.relay2On = instantOccupied;
-    sys.state = instantOccupied ? State::ALERT : State::AUTO_MONITORING;
-  } else {
-    sys.state = temperatureAlertLatched ? State::ALERT : State::AUTO_MONITORING;
-    sys.relay1On = sensor.lightIsDark && occupiedHeld;
-    sys.relay2On = temperatureAlertLatched;
+    sys.relay2On = false;
   }
 
   applyRelays(sys.relay1On, sys.relay2On);
   if (sys.state != previousState) { logEvent("State changed to " + String(stateName(sys.state))); previousState = sys.state; }
   if (sys.relay1On != previousRelay1) { logEvent(String("Relay 1 ") + (sys.relay1On ? "ON" : "OFF")); previousRelay1 = sys.relay1On; }
   if (sys.relay2On != previousRelay2) { logEvent(String("Relay 2 ") + (sys.relay2On ? "ON" : "OFF")); previousRelay2 = sys.relay2On; }
-  if (!updateSystemSnapshot(sys)) forceRelaysOff();
+  if (!updateSystemSnapshot(sys)) {
+    forceRelaysOff();
+    markCriticalFault("Control state update failed");
+  }
 }
 
 bool setMode(Mode newMode) {
