@@ -1,16 +1,29 @@
 # Continuous Integration
 
-The workflow in `.github/workflows/ci.yml` runs on pushes to `main`, pull requests to `main`, and manual dispatch. Permissions are limited to `contents: read`, and concurrency cancels older runs for the same ref.
+The workflow in `.github/workflows/ci.yml` validates the repository without physical hardware.
 
-## Firmware build
-The firmware build checks out the repository, sets up Python, installs dependencies from `requirements.txt`, caches PlatformIO directories, runs `python tools/verify_repo.py`, runs `pio run`, and uploads firmware artifacts when produced:
+## Triggers and permissions
 
-- `firmware.bin`
-- `firmware.elf`
-- `firmware.map`
+- Runs on pushes to `main`, pull requests to `main`, and manual dispatch.
+- Uses `contents: read` permissions only.
+- Cancels older runs for the same ref through workflow concurrency.
 
-## Repository verification
-`tools/verify_repo.py` checks required files, confirms the duplicate Wi-Fi example and local `secrets.h` are absent, rejects likely real Wi-Fi credentials, verifies README local links, and scans tracked text files for disallowed repository-positioning terms.
+## Dependency and cache strategy
 
-## Static analysis note
-`pio check` is not enabled by default because embedded framework checks can add noisy third-party library findings. It can be run locally when investigating a focused firmware change.
+CI uses Python 3.12, installs dependencies from `requirements.txt`, and caches PlatformIO cache, package, and platform directories using keys derived from `platformio.ini` and `requirements.txt`.
+
+## Stages
+
+| Stage | Command or action | Purpose |
+| --- | --- | --- |
+| Repository verification | `python tools/verify_repo.py` | Required files, links, guardrails, and secrets checks. |
+| Native tests | `pio test -e native` | Host-side Unity tests for pure control logic. |
+| Firmware build | `pio run -e esp32doit-devkit-v1` | ESP32 Arduino build validation. |
+| Artifact upload | upload action | Stores `firmware.bin`, `firmware.elf`, and `firmware.map` for 14 days. |
+
+## Troubleshooting CI failures
+
+- Verification failure: read the exact missing file, broken link, or content-policy message.
+- Native test failure: run `pio test -e native` locally and inspect `test/test_control_logic/test_control_logic.cpp`.
+- Firmware build failure: run `pio run -e esp32doit-devkit-v1` locally with verbose output if needed.
+- Artifact failure: confirm the ESP32 build completed and `.pio/build/esp32doit-devkit-v1/` contains the expected files.

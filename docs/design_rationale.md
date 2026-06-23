@@ -1,19 +1,33 @@
 # Design Rationale
 
-## Local-first operation
-The firmware serves a local dashboard and API directly from the ESP32. This keeps the system useful without cloud services and avoids additional network dependencies.
+## Local-first design
+
+The ESP32 serves the dashboard and API directly. This keeps basic monitoring and relay decisions available on a local network or fallback AP without external services.
 
 ## FreeRTOS task split
-Sensor reads, control decisions, web handling, and LED heartbeat run in separate tasks so slow web clients or sensor timing do not block the whole application. Shared data is exchanged through bounded snapshots protected by a mutex.
 
-## Fail-safe relay behavior
-Relays default off at boot and are forced off during repeated DHT11 or HC-SR04 failures. Control also enters `FAULT` and forces both relays off if the latest sensor snapshot becomes stale. This keeps output behavior conservative when environmental data is stale or unavailable.
+Sensor reads, control decisions, web handling, and LED heartbeat behavior have different timing needs. Separate tasks keep a slow client or sensor timeout from blocking the entire firmware.
 
-## Hysteresis and occupancy hold
-Temperature alert hysteresis avoids relay chatter around the threshold. Occupancy hold keeps short ultrasonic dropouts from immediately turning lights off.
+## Fail-safe relay design
 
-## Wi-Fi fallback
-Station mode is used when local credentials are provided. Otherwise the ESP32 starts a documented fallback AP so the dashboard remains reachable during setup.
+Relays default off, stale sensor snapshots enter `FAULT`, and fault paths force both relays off. This conservative behavior is appropriate for a prototype that makes decisions from environmental sensors.
 
-## Limitations
-The project intentionally avoids cloud telemetry, OTA updates, MQTT, authentication, and external dashboard CDNs. Future work can add deeper diagnostics, more isolated control logic tests, and enclosure-ready wiring diagrams while preserving the existing low-voltage safety assumptions.
+## Hysteresis
+
+Temperature uses separate alert-on and alert-off thresholds. This prevents rapid relay changes when the measured value moves around a single threshold.
+
+## Occupancy hold
+
+Ultrasonic readings can briefly drop out due to angle, surface, or timing. Occupancy hold keeps a recent valid detection active for a short window, reducing relay chatter.
+
+## Pure function testability
+
+`computeControlDecision(...)` isolates core decisions from GPIO and network code. Host-side tests can validate boundary behavior, faults, and mode handling quickly in CI.
+
+## Fallback AP
+
+Station Wi-Fi is convenient when credentials are available. The fallback AP keeps the dashboard reachable during setup, credential mistakes, or isolated lab use.
+
+## Limitations and extensions
+
+The current firmware intentionally omits authentication, MQTT, OTA, and cloud integrations. Future work can add an authentication layer for non-lab networks, optional MQTT bridge, optional OTA, richer dashboard history, and more host tests.

@@ -24,6 +24,9 @@ REQUIRED = [
     "docs/architecture.md", "docs/api.md", "docs/development.md", "docs/hardware.md",
     "docs/ci.md", "docs/testing_plan.md", "docs/design_rationale.md", "docs/troubleshooting.md",
     "hardware/wiring_table.md",
+    "test/test_control_logic/test_control_logic.cpp",
+    "test/native_stubs/Arduino.h",
+    "test/native_stubs/freertos/FreeRTOS.h",
 ]
 FORBIDDEN_PATHS = ["firmware/EdgeGuard_ESP32/secrets" + ".example.h", "firmware/EdgeGuard_ESP32/secrets.h", "docs/" + "inter" + "view_notes.md"]
 FORBIDDEN_PARTS = ["Qual" + "comm", "Nv" + "idia", "NVI" + "DIA", "In" + "tel", "inter" + "view", "jo" + "bs?", "hir" + "ing", "recruit" + "ers?", "built" + " for " + "inter" + "views", "align" + "ed for " + "jo" + "bs"]
@@ -57,12 +60,17 @@ def pass_msg(message: str) -> None:
     print(f"PASS: {message}")
 
 
-def check_readme_links(failures: list[str]) -> None:
-    text = (ROOT / "README.md").read_text(encoding="utf-8")
-    for match in re.finditer(r"\[[^\]]+\]\((?!https?://|#|mailto:)([^)]+)\)", text):
-        target = match.group(1).split("#", 1)[0]
-        if target and not (ROOT / target).exists():
-            fail(f"README link target missing: {target}", failures)
+def check_local_links(failures: list[str]) -> None:
+    link_pattern = re.compile(r"\[[^\]]+\]\((?!https?://|#|mailto:)([^)]+)\)")
+    for doc in [ROOT / "README.md", *sorted((ROOT / "docs").glob("*.md"))]:
+        text = doc.read_text(encoding="utf-8")
+        base = doc.parent
+        for match in link_pattern.finditer(text):
+            target = match.group(1).split("#", 1)[0].strip()
+            if not target or target.startswith("media/"):
+                continue
+            if not (base / target).resolve().exists() and not (ROOT / target).exists():
+                fail(f"local link target missing in {doc.relative_to(ROOT).as_posix()}: {target}", failures)
 
 
 def main() -> int:
@@ -88,8 +96,8 @@ def main() -> int:
                 if m.group(1) not in PLACEHOLDER_OK and rel != "firmware/EdgeGuard_ESP32/wifi_manager.cpp":
                     fail(f"possible real Wi-Fi credential in {rel}", failures)
     if not failures: pass_msg("text policy and credential checks passed")
-    check_readme_links(failures)
-    if not failures: pass_msg("README local links resolve")
+    check_local_links(failures)
+    if not failures: pass_msg("README and docs local links resolve")
     return 1 if failures else 0
 
 if __name__ == "__main__":
