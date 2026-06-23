@@ -12,22 +12,23 @@ It uses sensors such as DHT11, HC-SR04, and LDR, along with a relay module and l
 ## Repository Structure
 
 ```text
-.github/
-  README.md
-  workflows/
-
-docs/
-
-firmware/
-  EdgeGuard_ESP32/
-
-hardware/
-
-scripts/
-
-tests/
-  README.md
-  host_logic_tests/
+.
+├── .github/
+│   └── workflows/
+├── docs/
+├── firmware/
+│   └── EdgeGuard_ESP32/
+├── hardware/
+├── scripts/
+├── tests/
+│   └── host_logic_tests/
+├── .clang-format
+├── .editorconfig
+├── .gitignore
+├── AGENTS.md
+├── LICENSE
+└── README.md
+```
 
 ## Hardware used
 - ESP32 DevKit
