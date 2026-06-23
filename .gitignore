@@ -1,0 +1,33 @@
+# macOS
+.DS_Store
+
+# VS Code
+.vscode/*
+!.vscode/extensions.json
+
+# Arduino / PlatformIO / build files
+build/
+.pio/
+.vscode/.browse.c_cpp.db*
+*.bin
+*.elf
+*.map
+*.hex
+
+# CMake / compiled files
+cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+Makefile
+
+# Logs
+*.log
+
+# Secrets / WiFi credentials
+secrets.h
+config/secrets.h
+.env
+
+# Python cache if scripts are added later
+__pycache__/
+*.pyc
