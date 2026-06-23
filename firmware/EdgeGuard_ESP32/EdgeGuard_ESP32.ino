@@ -4,7 +4,12 @@
 #include <DHT.h>
 
 #include "config.h"
+#if __has_include("secrets.h")
 #include "secrets.h"
+#else
+#include "secrets.h.example"
+#endif
+#include "dashboard.h"
 
 // -------------------- GLOBAL OBJECTS --------------------
 DHT dht(PIN_DHT, DHT11);
@@ -94,16 +99,48 @@ String jsonEscape(String value) {
 }
 
 void logEvent(const String& message) {
-  String line = "[" + String(millis() / 1000) + "s] " + message;
+  char prefix[18];
+  snprintf(prefix, sizeof(prefix), "[%lus] ", static_cast<unsigned long>(millis() / 1000));
+  String line;
+  line.reserve(strlen(prefix) + message.length());
+  line += prefix;
+  line += message;
 
-  gEvents[gEventHead] = line;
-  gEventHead = (gEventHead + 1) % EVENT_LOG_SIZE;
-
-  if (gEventCount < EVENT_LOG_SIZE) {
-    gEventCount++;
+  if (xSemaphoreTake(gMutex, pdMS_TO_TICKS(50)) == pdTRUE) {
+    gEvents[gEventHead] = line;
+    gEventHead = (gEventHead + 1) % EVENT_LOG_SIZE;
+    if (gEventCount < EVENT_LOG_SIZE) {
+      gEventCount++;
+    }
+    xSemaphoreGive(gMutex);
   }
 
   Serial.println(line);
+}
+
+bool copySensorSnapshot(SensorSnapshot& out) {
+  if (xSemaphoreTake(gMutex, pdMS_TO_TICKS(50)) != pdTRUE) return false;
+  out = gSensor;
+  xSemaphoreGive(gMutex);
+  return true;
+}
+
+bool copySystemSnapshot(SystemSnapshot& out) {
+  if (xSemaphoreTake(gMutex, pdMS_TO_TICKS(50)) != pdTRUE) return false;
+  out = gSystem;
+  xSemaphoreGive(gMutex);
+  return true;
+}
+
+uint8_t copyEventLog(String (&out)[EVENT_LOG_SIZE]) {
+  if (xSemaphoreTake(gMutex, pdMS_TO_TICKS(50)) != pdTRUE) return 0;
+  const uint8_t count = gEventCount;
+  const uint8_t start = (gEventHead + EVENT_LOG_SIZE - gEventCount) % EVENT_LOG_SIZE;
+  for (uint8_t i = 0; i < count; i++) {
+    out[i] = gEvents[(start + i) % EVENT_LOG_SIZE];
+  }
+  xSemaphoreGive(gMutex);
+  return count;
 }
 
 // -------------------- RELAY DRIVER --------------------
@@ -210,9 +247,9 @@ void updateControl(const SensorSnapshot& sensor) {
   bool instantOccupied = sensor.distanceOk && sensor.distanceCm > 0 && sensor.distanceCm <= OCCUPIED_DISTANCE_CM;
 
   if (instantOccupied) {
-  lastOccupiedMs = millis();
-  hasEverSeenOccupancy = true;
-  } 
+    lastOccupiedMs = millis();
+    hasEverSeenOccupancy = true;
+  }
 
   bool occupiedHeld =
     instantOccupied ||
@@ -280,362 +317,134 @@ void updateControl(const SensorSnapshot& sensor) {
 }
 
 // -------------------- WEB DASHBOARD --------------------
+void sendCorsHeaders() {
+  server.sendHeader("Access-Control-Allow-Origin", "*");
+}
+
+void sendNoStoreHeaders() {
+  server.sendHeader("Cache-Control", "no-store, max-age=0");
+  server.sendHeader("Pragma", "no-cache");
+}
+
+void appendJsonString(String& json, const String& value) {
+  json += '"';
+  json += jsonEscape(value);
+  json += '"';
+}
+
 String buildStatusJson() {
   SensorSnapshot sensor;
   SystemSnapshot sys;
+  copySensorSnapshot(sensor);
+  copySystemSnapshot(sys);
 
-  if (xSemaphoreTake(gMutex, pdMS_TO_TICKS(50)) == pdTRUE) {
-    sensor = gSensor;
-    sys = gSystem;
-    xSemaphoreGive(gMutex);
-  }
-
-  String json = "{";
-
-  json += "\"temperature_c\":";
+  String json;
+  json.reserve(520);
+  json += "{\"temperature_c\":";
   json += sensor.dhtOk ? String(sensor.temperatureC, 1) : "null";
-  json += ",";
-
-  json += "\"humidity\":";
+  json += ",\"humidity\":";
   json += sensor.dhtOk ? String(sensor.humidity, 1) : "null";
-  json += ",";
-
-  json += "\"dht_ok\":";
+  json += ",\"dht_ok\":";
   json += sensor.dhtOk ? "true" : "false";
-  json += ",";
-
-  json += "\"distance_cm\":";
+  json += ",\"distance_cm\":";
   json += sensor.distanceOk ? String(sensor.distanceCm) : "null";
-  json += ",";
-
-  json += "\"distance_ok\":";
+  json += ",\"distance_ok\":";
   json += sensor.distanceOk ? "true" : "false";
-  json += ",";
-
-  json += "\"light_is_dark\":";
+  json += ",\"light_is_dark\":";
   json += sensor.lightIsDark ? "true" : "false";
-  json += ",";
-
-  json += "\"occupied\":";
+  json += ",\"occupied\":";
   json += sys.occupied ? "true" : "false";
-  json += ",";
-
-  json += "\"mode\":\"";
+  json += ",\"mode\":\"";
   json += modeName(sys.mode);
-  json += "\",";
-
-  json += "\"state\":\"";
+  json += "\",\"state\":\"";
   json += stateName(sys.state);
-  json += "\",";
-
-  json += "\"relay1\":";
+  json += "\",\"relay1\":";
   json += sys.relay1On ? "true" : "false";
-  json += ",";
-
-  json += "\"relay2\":";
+  json += ",\"relay2\":";
   json += sys.relay2On ? "true" : "false";
-  json += ",";
-
-  json += "\"temperature_alert\":";
+  json += ",\"temperature_alert\":";
   json += sys.temperatureAlert ? "true" : "false";
-  json += ",";
-
-  json += "\"fault_reason\":\"";
-  json += jsonEscape(sys.faultReason);
-  json += "\",";
-
-  json += "\"uptime_s\":";
+  json += ",\"fault_reason\":";
+  appendJsonString(json, sys.faultReason);
+  json += ",\"uptime_s\":";
   json += String(millis() / 1000);
-
+  json += ",\"wifi_mode\":\"";
+  json += (WiFi.getMode() == WIFI_AP ? "AP" : "STA");
+  json += "\",\"ip\":\"";
+  json += (WiFi.getMode() == WIFI_AP ? WiFi.softAPIP().toString() : WiFi.localIP().toString());
+  json += "\",\"heap_free\":";
+  json += String(ESP.getFreeHeap());
+  if (WiFi.getMode() == WIFI_STA && WiFi.status() == WL_CONNECTED) {
+    json += ",\"rssi\":";
+    json += String(WiFi.RSSI());
+  }
   json += "}";
-
   return json;
 }
 
 String buildLogsJson() {
-  String json = "[";
-
-  uint8_t start = (gEventHead + EVENT_LOG_SIZE - gEventCount) % EVENT_LOG_SIZE;
-
-  for (uint8_t i = 0; i < gEventCount; i++) {
-    uint8_t index = (start + i) % EVENT_LOG_SIZE;
-    json += "\"";
-    json += jsonEscape(gEvents[index]);
-    json += "\"";
-
-    if (i < gEventCount - 1) {
-      json += ",";
-    }
+  String events[EVENT_LOG_SIZE];
+  const uint8_t count = copyEventLog(events);
+  String json;
+  json.reserve(384);
+  json += "[";
+  for (uint8_t i = 0; i < count; i++) {
+    appendJsonString(json, events[i]);
+    if (i < count - 1) json += ",";
   }
-
   json += "]";
   return json;
 }
 
+void sendJson(int status, const String& payload) {
+  sendCorsHeaders();
+  sendNoStoreHeaders();
+  server.send(status, "application/json", payload);
+}
+
 void sendOk() {
-  server.sendHeader("Access-Control-Allow-Origin", "*");
-  server.send(200, "application/json", "{\"ok\":true}");
+  sendJson(200, "{\"ok\":true}");
 }
 
 void setMode(Mode newMode) {
   if (xSemaphoreTake(gMutex, pdMS_TO_TICKS(50)) == pdTRUE) {
     gSystem.mode = newMode;
-    if (newMode == Mode::MANUAL) {
-      gSystem.state = State::MANUAL_OVERRIDE;
-    }
+    if (newMode == Mode::MANUAL) gSystem.state = State::MANUAL_OVERRIDE;
     xSemaphoreGive(gMutex);
   }
-
   logEvent("Mode changed to " + String(modeName(newMode)));
 }
 
 void setManualRelay(uint8_t relayNumber, bool on) {
   SystemSnapshot sys;
-
   if (xSemaphoreTake(gMutex, pdMS_TO_TICKS(50)) == pdTRUE) {
     gSystem.mode = Mode::MANUAL;
     gSystem.state = State::MANUAL_OVERRIDE;
-
-    if (relayNumber == 1) {
-      gSystem.relay1On = on;
-    } else if (relayNumber == 2) {
-      gSystem.relay2On = on;
-    }
-
+    if (relayNumber == 1) gSystem.relay1On = on;
+    else if (relayNumber == 2) gSystem.relay2On = on;
     sys = gSystem;
     xSemaphoreGive(gMutex);
   }
-
   applyRelays(sys.relay1On, sys.relay2On);
-
   logEvent("Manual Relay " + String(relayNumber) + " " + String(on ? "ON" : "OFF"));
 }
 
 void handleRoot() {
-  String html = R"rawliteral(
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>EdgeGuard ESP32</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 24px;
-      background: #f5f5f5;
-    }
-    h1 {
-      margin-bottom: 4px;
-    }
-    .subtitle {
-      color: #555;
-      margin-bottom: 20px;
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 12px;
-    }
-    .card {
-      background: white;
-      padding: 16px;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.12);
-    }
-    .value {
-      font-size: 28px;
-      font-weight: bold;
-      margin-top: 8px;
-    }
-    .ok {
-      color: #0a7d32;
-    }
-    .bad {
-      color: #b00020;
-    }
-    button {
-      padding: 10px 14px;
-      margin: 4px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      background: #222;
-      color: white;
-    }
-    button:hover {
-      opacity: 0.85;
-    }
-    pre {
-      background: #111;
-      color: #eee;
-      padding: 12px;
-      border-radius: 10px;
-      overflow-x: auto;
-    }
-  </style>
-</head>
-<body>
-  <h1>EdgeGuard ESP32</h1>
-  <div class="subtitle">RTOS-style Smart Room Monitoring and Control Node</div>
-
-  <div class="grid">
-    <div class="card">
-      <div>System State</div>
-      <div id="state" class="value">--</div>
-    </div>
-    <div class="card">
-      <div>Mode</div>
-      <div id="mode" class="value">--</div>
-    </div>
-    <div class="card">
-      <div>Temperature</div>
-      <div id="temp" class="value">--</div>
-    </div>
-    <div class="card">
-      <div>Humidity</div>
-      <div id="hum" class="value">--</div>
-    </div>
-    <div class="card">
-      <div>Distance</div>
-      <div id="dist" class="value">--</div>
-    </div>
-    <div class="card">
-      <div>Light</div>
-      <div id="light" class="value">--</div>
-    </div>
-    <div class="card">
-      <div>Occupancy</div>
-      <div id="occ" class="value">--</div>
-    </div>
-    <div class="card">
-      <div>Relays</div>
-      <div id="relays" class="value">--</div>
-    </div>
-  </div>
-
-  <div class="card" style="margin-top: 16px;">
-    <h2>Controls</h2>
-    <button onclick="post('/api/mode/auto')">AUTO Mode</button>
-    <button onclick="post('/api/mode/manual')">MANUAL Mode</button>
-    <button onclick="post('/api/mode/away')">AWAY Mode</button>
-    <br>
-    <button onclick="post('/api/relay1/on')">Relay 1 ON</button>
-    <button onclick="post('/api/relay1/off')">Relay 1 OFF</button>
-    <button onclick="post('/api/relay2/on')">Relay 2 ON</button>
-    <button onclick="post('/api/relay2/off')">Relay 2 OFF</button>
-  </div>
-
-  <div class="card" style="margin-top: 16px;">
-    <h2>Fault</h2>
-    <div id="fault">--</div>
-  </div>
-
-  <div class="card" style="margin-top: 16px;">
-    <h2>Event Log</h2>
-    <pre id="logs">Loading...</pre>
-  </div>
-
-<script>
-async function post(path) {
-  await fetch(path, { method: 'POST' });
-  await refresh();
-}
-
-function yesNo(v) {
-  return v ? "YES" : "NO";
-}
-
-function onOff(v) {
-  return v ? "ON" : "OFF";
-}
-
-async function refresh() {
-  const res = await fetch('/api/status');
-  const s = await res.json();
-
-  document.getElementById('state').textContent = s.state;
-  document.getElementById('mode').textContent = s.mode;
-
-  document.getElementById('temp').textContent =
-    s.temperature_c === null ? "DHT ERROR" : s.temperature_c + " °C";
-
-  document.getElementById('hum').textContent =
-    s.humidity === null ? "DHT ERROR" : s.humidity + " %";
-
-  document.getElementById('dist').textContent =
-    s.distance_cm === null ? "NO ECHO" : s.distance_cm + " cm";
-
-  document.getElementById('light').textContent = s.light_is_dark ? "DARK" : "BRIGHT";
-  document.getElementById('occ').textContent = yesNo(s.occupied);
-  document.getElementById('relays').textContent =
-    "R1 " + onOff(s.relay1) + " / R2 " + onOff(s.relay2);
-
-  document.getElementById('fault').textContent =
-    s.fault_reason.length ? s.fault_reason : "No fault";
-
-  const logRes = await fetch('/api/logs');
-  const logs = await logRes.json();
-  document.getElementById('logs').textContent = logs.join('\\n');
-}
-
-setInterval(refresh, 1000);
-refresh();
-</script>
-</body>
-</html>
-)rawliteral";
-
-  server.send(200, "text/html", html);
+  server.sendHeader("Cache-Control", "no-store, max-age=0");
+  server.send_P(200, "text/html", DASHBOARD_HTML);
 }
 
 void setupWebServer() {
   server.on("/", HTTP_GET, handleRoot);
-
-  server.on("/api/status", HTTP_GET, []() {
-    server.sendHeader("Access-Control-Allow-Origin", "*");
-    server.send(200, "application/json", buildStatusJson());
-  });
-
-  server.on("/api/logs", HTTP_GET, []() {
-    server.sendHeader("Access-Control-Allow-Origin", "*");
-    server.send(200, "application/json", buildLogsJson());
-  });
-
-  server.on("/api/mode/auto", HTTP_POST, []() {
-    setMode(Mode::AUTO);
-    sendOk();
-  });
-
-  server.on("/api/mode/manual", HTTP_POST, []() {
-    setMode(Mode::MANUAL);
-    sendOk();
-  });
-
-  server.on("/api/mode/away", HTTP_POST, []() {
-    setMode(Mode::AWAY);
-    sendOk();
-  });
-
-  server.on("/api/relay1/on", HTTP_POST, []() {
-    setManualRelay(1, true);
-    sendOk();
-  });
-
-  server.on("/api/relay1/off", HTTP_POST, []() {
-    setManualRelay(1, false);
-    sendOk();
-  });
-
-  server.on("/api/relay2/on", HTTP_POST, []() {
-    setManualRelay(2, true);
-    sendOk();
-  });
-
-  server.on("/api/relay2/off", HTTP_POST, []() {
-    setManualRelay(2, false);
-    sendOk();
-  });
-
+  server.on("/api/status", HTTP_GET, []() { sendJson(200, buildStatusJson()); });
+  server.on("/api/logs", HTTP_GET, []() { sendJson(200, buildLogsJson()); });
+  server.on("/api/mode/auto", HTTP_POST, []() { setMode(Mode::AUTO); sendOk(); });
+  server.on("/api/mode/manual", HTTP_POST, []() { setMode(Mode::MANUAL); sendOk(); });
+  server.on("/api/mode/away", HTTP_POST, []() { setMode(Mode::AWAY); sendOk(); });
+  server.on("/api/relay1/on", HTTP_POST, []() { setManualRelay(1, true); sendOk(); });
+  server.on("/api/relay1/off", HTTP_POST, []() { setManualRelay(1, false); sendOk(); });
+  server.on("/api/relay2/on", HTTP_POST, []() { setManualRelay(2, true); sendOk(); });
+  server.on("/api/relay2/off", HTTP_POST, []() { setManualRelay(2, false); sendOk(); });
   server.begin();
 }
 
@@ -718,10 +527,7 @@ void ControlTask(void* parameter) {
   for (;;) {
     SensorSnapshot sensor;
 
-    if (xSemaphoreTake(gMutex, pdMS_TO_TICKS(50)) == pdTRUE) {
-      sensor = gSensor;
-      xSemaphoreGive(gMutex);
-    }
+    copySensorSnapshot(sensor);
 
     updateControl(sensor);
 
@@ -742,10 +548,7 @@ void HeartbeatTask(void* parameter) {
   for (;;) {
     SystemSnapshot sys;
 
-    if (xSemaphoreTake(gMutex, pdMS_TO_TICKS(50)) == pdTRUE) {
-      sys = gSystem;
-      xSemaphoreGive(gMutex);
-    }
+    copySystemSnapshot(sys);
 
     ledState = !ledState;
 
