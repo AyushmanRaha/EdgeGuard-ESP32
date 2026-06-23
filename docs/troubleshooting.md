@@ -2,15 +2,17 @@
 
 ## Upload fails with `A fatal error occurred: The chip stopped responding`
 
-This usually means the build succeeded and the ESP32 started flashing, but the serial connection dropped before the main firmware image finished writing.
+This usually means compilation succeeded, the ESP32 entered flashing mode, and the serial flashing session dropped before the main firmware image finished writing. It does **not** mean the sketch logic directly caused the mid-upload failure.
 
 Typical signs:
 
-- Arduino IDE reports sketch size successfully.
+- Arduino IDE reports sketch size successfully and the image is within the available flash limit.
 - esptool connects to the ESP32.
 - Bootloader and partition images write and verify.
-- Failure happens while writing the large application `.bin` at `0x00010000`.
+- Failure happens while writing the main application `.bin` at `0x00010000`, often around a partial percentage such as 61%.
 - The log ends with `StopIteration`, `The chip stopped responding`, or `Failed uploading`.
+
+A larger firmware image can make an unstable USB serial link more likely to fail because the write takes longer, but the image is still acceptable when the IDE reports it is within flash limits.
 
 Most likely causes:
 
@@ -19,7 +21,7 @@ Most likely causes:
 - ESP32 is connected through a weak USB hub.
 - Breadboard wiring is loose.
 - Relay/sensor modules are drawing power from the ESP32 USB supply during flashing.
-- The board auto-reset circuit is unreliable and needs manual `BOOT` help.
+- The BOOT/EN auto-reset circuit is unreliable and needs manual `BOOT` help.
 - Another app, such as Serial Monitor, is holding the serial port.
 
 Recovery checklist:
@@ -31,7 +33,8 @@ Recovery checklist:
 5. Start upload. If it sticks at `Connecting...`, hold `BOOT` until writing starts, then release it.
 6. If it drops mid-upload, unplug the ESP32, wait a few seconds, and try again at `115200`.
 7. If still unstable, disconnect external relay/sensor VCC wires while the board is unpowered, upload to the bare ESP32, then reconnect the low-voltage circuit with power removed.
-8. After upload, press `EN`/reset and open Serial Monitor at `115200`.
+8. Keep the project low-voltage only; do not connect mains AC.
+9. After upload, press `EN`/reset and open Serial Monitor at `115200`.
 
 For PlatformIO, the repo uses a conservative `upload_speed = 115200` in `platformio.ini`.
 

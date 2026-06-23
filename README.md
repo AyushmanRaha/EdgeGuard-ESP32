@@ -127,11 +127,12 @@ See [docs/api.md](docs/api.md) for field details.
 4. Copy `firmware/EdgeGuard_ESP32/secrets.h.example` to `firmware/EdgeGuard_ESP32/secrets.h` and edit Wi-Fi credentials, or leave the example placeholders to use fallback AP mode.
 5. Select an ESP32 DevKit board, build, and upload.
 
-Recommended upload settings for reliability:
+Recommended Arduino IDE upload settings for reliability:
 
+- Board: ESP32 DevKit / DOIT ESP32 DevKit V1, or the exact matching board profile for your module.
 - Port: the detected ESP32 serial port, for example `/dev/cu.usbserial-0001` on macOS.
-- Upload speed: start with `115200`. If this is stable, `230400` may also work. Avoid high upload speeds when the board is on a breadboard, connected through a hub, or connected to relay/sensor wiring.
-- Serial Monitor baud: `115200`.
+- Upload Speed: start with `115200`. If this is stable, `230400` may also work. Avoid high upload speeds when the board is on a breadboard, connected through a hub, or connected to relay/sensor wiring.
+- Serial Monitor: `115200` baud.
 - Close Serial Monitor before uploading.
 
 ### PlatformIO
@@ -159,7 +160,9 @@ GitHub Actions builds firmware with PlatformIO, checks required documentation fi
 
 ### Upload fails with `A fatal error occurred: The chip stopped responding`
 
-If the compile succeeds, the board connects, bootloader/partition data verifies, and the upload fails while writing the main `.bin`, the firmware is not the immediate cause. The ESP32 stopped responding during serial flashing. Common causes are an unstable USB cable, weak USB power, a USB hub, high upload speed, loose breadboard wiring, connected relay/sensor modules drawing power during flashing, or the board auto-reset circuit behaving unreliably.
+If the compile succeeds, the reported sketch size is within flash limits, esptool connects, bootloader/partition data verifies, and the upload fails while writing the main `.bin` at `0x00010000`, this is not a sketch-size problem and the application code is not the immediate cause. The ESP32 entered flashing mode, then the serial flashing session dropped mid-transfer. Common causes are an unstable USB cable, weak USB power, a USB hub, high upload speed, loose breadboard wiring, connected relay/sensor modules drawing power during flashing, or the BOOT/EN auto-reset circuit behaving unreliably.
+
+A larger firmware image can make an already-unstable link more likely to fail because flashing takes longer, but the image is still valid when the Arduino IDE reports it is within the available flash limit.
 
 Try this recovery sequence:
 
@@ -168,8 +171,8 @@ Try this recovery sequence:
 3. Use a short data-capable USB cable and connect directly to the Mac, not through a hub.
 4. Keep the project connected only to low-voltage wiring. Do not use mains AC.
 5. In Arduino IDE, set Upload Speed to `115200`.
-6. Press and hold `BOOT`, click Upload, release `BOOT` when the IDE shows `Writing at 0x00010000`.
-7. If it still fails, disconnect external relay/sensor VCC wires while the board is unpowered, upload to the bare ESP32, then reconnect the low-voltage circuit with power removed.
+6. If upload sticks at `Connecting...`, press and hold `BOOT` until writing starts, then release it.
+7. If upload drops mid-write, retry at `115200`; if it still fails, disconnect external relay/sensor VCC wires while the board is unpowered, upload to the bare ESP32, then reconnect the low-voltage circuit with power removed.
 8. After upload, press `EN`/reset once and open Serial Monitor at `115200`.
 
 ### Sensor and dashboard issues

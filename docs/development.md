@@ -10,8 +10,9 @@ Recommended Arduino IDE upload settings:
 - Port: the detected ESP32 serial port, for example `/dev/cu.usbserial-0001` on macOS.
 - Upload Speed: `115200` for maximum reliability.
 - Serial Monitor: `115200` baud.
+- Close Serial Monitor before uploading.
 
-If upload fails while writing the main firmware image, close Serial Monitor, use a short data USB cable, connect directly to the Mac, retry at `115200`, and use the `BOOT` button if the board does not enter flashing mode reliably.
+Stable Arduino upload workflow: use a short data-capable USB cable, avoid USB hubs while flashing, start at `115200`, hold `BOOT` until writing starts if upload sticks at `Connecting...`, retry at `115200` if upload drops mid-write, and press `EN`/reset once after upload. If the serial link remains unstable, disconnect external low-voltage relay/sensor VCC wires while the board is unpowered, upload to the bare ESP32, then reconnect with power removed.
 
 ## PlatformIO
 
@@ -23,7 +24,7 @@ pio run --target upload
 pio device monitor -b 115200
 ```
 
-The PlatformIO environment sets `upload_speed = 115200` to prioritize reliable flashing over maximum speed.
+The PlatformIO environment keeps `board = esp32doit-devkit-v1`, `framework = arduino`, `monitor_speed = 115200`, and `upload_speed = 115200`. The conservative upload speed prioritizes reliable flashing over maximum speed on CH340/CP210x USB-serial boards, USB hubs, and breadboarded low-voltage circuits. PlatformIO is optional; Arduino IDE users can use the settings above instead.
 
 ## Configuration
 
