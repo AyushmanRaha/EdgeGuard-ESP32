@@ -7,7 +7,7 @@ The GitHub Actions workflow at `.github/workflows/ci.yml` runs on pushes to `mai
 - Checks out the repo.
 - Sets up Python.
 - Caches pip and PlatformIO package cache directories.
-- Installs PlatformIO Core.
+- Installs the pinned PlatformIO Core dependency from `requirements.txt`.
 - Runs `pio run` without requiring ESP32 hardware or Wi-Fi credentials.
 - Uploads firmware binary, ELF, and map artifacts when generated.
 
