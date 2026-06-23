@@ -2,6 +2,7 @@
 
 #include "app_state.h"
 #include "control.h"
+#include "diagnostics.h"
 #include "sensors.h"
 #include "tasks.h"
 #include "web_routes.h"
@@ -10,6 +11,8 @@
 void setup() {
   Serial.begin(115200);
   delay(1000);
+
+  initDiagnostics();
 
   setupPins();
   if (!initAppState()) {

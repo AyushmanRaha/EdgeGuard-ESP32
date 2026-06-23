@@ -9,7 +9,9 @@ The sketch is split into Arduino-compatible modules under `firmware/EdgeGuard_ES
 | `types.h` | Modes, states, sensor snapshot, system snapshot |
 | `app_state.*` | Shared snapshots, mutex-protected copies, bounded event log |
 | `sensors.*` | DHT11, LDR, and HC-SR04 reads with echo timeout |
-| `control.*` | Relay driver, mode logic, fault handling, hysteresis, occupancy hold |
+| `control_logic.*` | Pure control decision helper for state-machine testing without hardware writes |
+| `control.*` | Relay driver, fault handling integration, and applying computed decisions |
+| `diagnostics.*` | Firmware metadata, sensor/task/Wi-Fi/runtime diagnostics, and watchdog status |
 | `wifi_manager.*` | Station connection and fallback AP |
 | `web_routes.*` | Dashboard route, JSON builders, and API handlers |
 | `tasks.*` | FreeRTOS task loops and task creation checks |

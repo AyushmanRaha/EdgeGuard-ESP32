@@ -17,3 +17,4 @@
 10. Dashboard/API: verify `/`, `/api/status`, `/api/logs`, and all command routes.
 11. Relay fail-safe: verify `FAULT` forces both relay outputs off.
 12. AP fallback: leave Wi-Fi placeholders in `secrets.h.example` or omit local credentials and connect to `EdgeGuard-ESP32`.
+13. Diagnostics: verify `/api/status` includes firmware metadata, stale-data flags, task heartbeat timestamps, failure counters, heap minimum, reset reason, Wi-Fi fallback state, and watchdog status.

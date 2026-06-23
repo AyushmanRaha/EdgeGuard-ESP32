@@ -7,7 +7,7 @@ The firmware serves a local dashboard and API directly from the ESP32. This keep
 Sensor reads, control decisions, web handling, and LED heartbeat run in separate tasks so slow web clients or sensor timing do not block the whole application. Shared data is exchanged through bounded snapshots protected by a mutex.
 
 ## Fail-safe relay behavior
-Relays default off at boot and are forced off during repeated DHT11 or HC-SR04 failures. This keeps output behavior conservative when environmental data is stale or unavailable.
+Relays default off at boot and are forced off during repeated DHT11 or HC-SR04 failures. Control also enters `FAULT` and forces both relays off if the latest sensor snapshot becomes stale. This keeps output behavior conservative when environmental data is stale or unavailable.
 
 ## Hysteresis and occupancy hold
 Temperature alert hysteresis avoids relay chatter around the threshold. Occupancy hold keeps short ultrasonic dropouts from immediately turning lights off.
