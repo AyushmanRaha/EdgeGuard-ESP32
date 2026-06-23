@@ -127,6 +127,13 @@ See [docs/api.md](docs/api.md) for field details.
 4. Copy `firmware/EdgeGuard_ESP32/secrets.h.example` to `firmware/EdgeGuard_ESP32/secrets.h` and edit Wi-Fi credentials, or leave the example placeholders to use fallback AP mode.
 5. Select an ESP32 DevKit board, build, and upload.
 
+Recommended upload settings for reliability:
+
+- Port: the detected ESP32 serial port, for example `/dev/cu.usbserial-0001` on macOS.
+- Upload speed: start with `115200`. If this is stable, `230400` may also work. Avoid high upload speeds when the board is on a breadboard, connected through a hub, or connected to relay/sensor wiring.
+- Serial Monitor baud: `115200`.
+- Close Serial Monitor before uploading.
+
 ### PlatformIO
 
 ```bash
@@ -135,7 +142,7 @@ pio run --target upload
 pio device monitor -b 115200
 ```
 
-The `platformio.ini` target uses `esp32doit-devkit-v1`, Arduino framework, and the DHT dependencies.
+The `platformio.ini` target uses `esp32doit-devkit-v1`, Arduino framework, the DHT dependencies, and a conservative `upload_speed = 115200` for reliable flashing.
 
 ## Configuration
 
@@ -149,6 +156,23 @@ The `platformio.ini` target uses `esp32doit-devkit-v1`, Arduino framework, and t
 GitHub Actions builds firmware with PlatformIO, checks required documentation files, rejects committed `secrets.h`, caches pip and PlatformIO package caches, and uploads firmware artifacts when available. CI does not need physical ESP32 hardware or Wi-Fi credentials.
 
 ## Troubleshooting
+
+### Upload fails with `A fatal error occurred: The chip stopped responding`
+
+If the compile succeeds, the board connects, bootloader/partition data verifies, and the upload fails while writing the main `.bin`, the firmware is not the immediate cause. The ESP32 stopped responding during serial flashing. Common causes are an unstable USB cable, weak USB power, a USB hub, high upload speed, loose breadboard wiring, connected relay/sensor modules drawing power during flashing, or the board auto-reset circuit behaving unreliably.
+
+Try this recovery sequence:
+
+1. Unplug the ESP32.
+2. Close Serial Monitor and any other program using the same serial port.
+3. Use a short data-capable USB cable and connect directly to the Mac, not through a hub.
+4. Keep the project connected only to low-voltage wiring. Do not use mains AC.
+5. In Arduino IDE, set Upload Speed to `115200`.
+6. Press and hold `BOOT`, click Upload, release `BOOT` when the IDE shows `Writing at 0x00010000`.
+7. If it still fails, disconnect external relay/sensor VCC wires while the board is unpowered, upload to the bare ESP32, then reconnect the low-voltage circuit with power removed.
+8. After upload, press `EN`/reset once and open Serial Monitor at `115200`.
+
+### Sensor and dashboard issues
 
 - DHT error: check wiring, power, the DHT data pin on GPIO 4, and library installation.
 - HC-SR04 no echo: confirm trigger GPIO 5, echo GPIO 18, common ground, sensor power, and the echo divider.
