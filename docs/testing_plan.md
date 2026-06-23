@@ -1,17 +1,9 @@
-# Testing plan
+# Testing Plan
 
-## Host unit tests
-Run `bash scripts/run_host_tests.sh`. Tests cover AUTO lighting, occupancy timeout/hold, temperature hysteresis, DHT and ultrasonic faults, MANUAL preservation, AWAY alert behavior, FAULT priority, and event-log ordering.
+Automated checks:
+- `bash scripts/run_host_tests.sh` builds and runs C++17 control, event log, diagnostics, and history tests.
+- `python3 scripts/validate_repo.py` checks required files, frozen pin values, secrets policy, banned wording, and secret-key templates.
+- `python3 scripts/check_firmware_structure.py` checks Arduino structure, required modules, forbidden dependency wording, and low-voltage safety wording.
+- CI runs Arduino CLI compile for `esp32:esp32:esp32` without hardware upload.
 
-## Repository checks
-Run `python3 scripts/validate_repo.py` and `python3 scripts/check_firmware_structure.py` to verify secrets handling, required files, frozen pin mappings, and forbidden new hardware/service requirements.
-
-## Arduino compile check
-CI uses Arduino CLI to install ESP32 board support and required libraries, creates dummy `secrets.h`, and compiles `firmware/EdgeGuard_ESP32` for `esp32:esp32:esp32`.
-
-## Manual hardware tests
-- Confirm dashboard opens over Wi-Fi or fallback AP.
-- Cover/uncover LDR and move near HC-SR04 in AUTO.
-- Test MANUAL relay buttons.
-- Warm DHT11 enough to cross alert threshold.
-- Disconnect DHT11 or block HC-SR04 echo to observe FAULT after repeated failures.
+Manual hardware validation should verify boot relay-off behavior, AUTO dark/occupied behavior, MANUAL relay control, AWAY alert behavior, fault behavior, fault reset, `/api/diagnostics`, and `/api/history.csv`.

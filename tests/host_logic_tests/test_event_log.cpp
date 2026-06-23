@@ -1,13 +1,4 @@
 #include <cassert>
-#include <cstdio>
 #include <cstring>
 #include "edgeguard_event_log.h"
-int main(){
-  EdgeGuardEventLog log; assert(log.count()==0);
-  log.push("one"); assert(log.count()==1); assert(std::strcmp(log.get(0),"one")==0);
-  for(size_t i=0;i<EdgeGuardEventLog::kCapacity+2;i++){ char b[16]; snprintf(b,sizeof(b),"e%zu",i); log.push(b); }
-  assert(log.count()==EdgeGuardEventLog::kCapacity); assert(std::strcmp(log.get(0),"e2")==0);
-  assert(std::strcmp(log.get(EdgeGuardEventLog::kCapacity-1),"e21")==0);
-  for(size_t i=0;i<log.count();++i){ char b[16]; snprintf(b,sizeof(b),"e%zu",i+2); assert(std::strcmp(log.get(i),b)==0); }
-  return 0;
-}
+int main(){ EdgeGuardEventLog log; assert(log.count()==0); log.push(1000,EventLevel::WARN,"warn"); assert(log.count()==1); auto e=log.getEntry(0); assert(e.timestampMs==1000 && e.level==EventLevel::WARN && std::strcmp(e.message,"warn")==0); for(size_t i=0;i<EdgeGuardEventLog::kCapacity+3;i++) log.push((uint32_t)i,EventLevel::INFO,"x"); assert(log.count()==EdgeGuardEventLog::kCapacity); assert(log.getEntry(0).timestampMs==3); char longMsg[200]; std::memset(longMsg,'a',sizeof(longMsg)); longMsg[199]='\0'; log.clear(); log.push(1,EventLevel::FAULT,longMsg); assert(std::strlen(log.getEntry(0).message)==EdgeGuardEventLog::kMaxEventLength-1); log.push(2,EventLevel::SECURITY,nullptr); assert(log.getEntry(1).message[0]=='\0'); return 0; }

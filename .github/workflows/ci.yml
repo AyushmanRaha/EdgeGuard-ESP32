@@ -24,6 +24,15 @@ jobs:
       - name: Check firmware structure
         run: python3 scripts/check_firmware_structure.py
 
+  formatting-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install clang-format
+        run: sudo apt-get update && sudo apt-get install -y clang-format
+      - name: Firmware formatting dry run
+        run: clang-format --dry-run --Werror firmware/EdgeGuard_ESP32/*.h firmware/EdgeGuard_ESP32/*.cpp
+
   arduino-compile:
     runs-on: ubuntu-latest
     steps:
@@ -32,6 +41,13 @@ jobs:
         run: |
           curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | sh
           echo "$PWD/bin" >> "$GITHUB_PATH"
+      - name: Cache Arduino packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.arduino15/packages
+            ~/Arduino/libraries
+          key: arduino-${{ runner.os }}-${{ hashFiles('firmware/EdgeGuard_ESP32/*.ino', 'firmware/EdgeGuard_ESP32/*.h', 'firmware/EdgeGuard_ESP32/*.cpp') }}
       - name: Install ESP32 core and libraries
         run: |
           arduino-cli config init
@@ -46,6 +62,9 @@ jobs:
           #pragma once
           #define WIFI_SSID "CI_DUMMY_WIFI"
           #define WIFI_PASSWORD "CI_DUMMY_PASSWORD"
+          #define EDGEGUARD_AP_SSID "EdgeGuard-ESP32-CI"
+          #define EDGEGUARD_AP_PASSWORD "ci-change-this-password"
+          #define EDGEGUARD_API_TOKEN "ci-change-this-token"
           SECRETS
       - name: Compile ESP32 sketch
         run: arduino-cli compile --fqbn esp32:esp32:esp32 firmware/EdgeGuard_ESP32

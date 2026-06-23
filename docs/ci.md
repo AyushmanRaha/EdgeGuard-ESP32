@@ -1,15 +1,14 @@
 # CI
 
-The workflow in `.github/workflows/ci.yml` runs on pull requests, pushes to `main`, and manual dispatch.
+The workflow has three checks:
 
-## host-tests job
-Installs CMake/build tools, runs `scripts/run_host_tests.sh`, validates repo hygiene, and checks firmware structure.
+## host-tests
+Installs CMake and build tools, runs host C++ tests, repository validation, and firmware structure checks.
 
-## arduino-compile job
-Installs Arduino CLI, ESP32 Arduino core, DHT sensor library, and Adafruit Unified Sensor. It writes dummy CI credentials and compiles the sketch for `esp32:esp32:esp32` without uploading.
+## formatting-check
+Installs clang-format and performs a dry-run check on firmware `.h` and `.cpp` files.
 
-## Why Arduino compile CI matters
-It catches missing includes, syntax errors, library issues, and accidental Arduino IDE incompatibility before a student tries to upload.
+## arduino-compile
+Installs Arduino CLI, installs the ESP32 platform and required libraries, creates a temporary compile-only `secrets.h`, and compiles `firmware/EdgeGuard_ESP32` for `esp32:esp32:esp32`. It does not upload to hardware.
 
-## Why host tests matter
-They verify state-machine behavior quickly on any development laptop, including an M1 MacBook, without needing the ESP32 connected.
+Credentials are represented by placeholders during CI. Real local credentials belong only in ignored `firmware/EdgeGuard_ESP32/secrets.h`.

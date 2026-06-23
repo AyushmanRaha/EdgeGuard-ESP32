@@ -1,5 +1,9 @@
 #pragma once
+#ifdef ARDUINO
 #include <Arduino.h>
+#else
+#include <stdint.h>
+#endif
 
 // -------------------- GPIO PIN MAP --------------------
 constexpr uint8_t PIN_DHT = 4;
@@ -43,4 +47,5 @@ constexpr uint32_t HEARTBEAT_ALERT_MS = 300;
 constexpr uint32_t HEARTBEAT_FAULT_MS = 150;
 
 // -------------------- LOGGING --------------------
-constexpr uint8_t EVENT_LOG_SIZE = 20;
+constexpr uint8_t EVENT_LOG_SIZE = 32;
+constexpr uint8_t SENSOR_HISTORY_SIZE = 60;

@@ -10,7 +10,7 @@ enum class Mode : uint8_t { AUTO, MANUAL, AWAY };
 
 enum class State : uint8_t { BOOT, CALIBRATING, AUTO_MONITORING, MANUAL_OVERRIDE, ALERT, FAULT };
 
-enum class FaultCode : uint8_t { NONE, DHT, ULTRASONIC, DHT_AND_ULTRASONIC };
+enum class FaultCode : uint8_t { NONE, DHT, ULTRASONIC, DHT_AND_ULTRASONIC, TASK_WATCHDOG };
 
 struct SensorSnapshot {
   float temperatureC = EDGEGUARD_NAN;

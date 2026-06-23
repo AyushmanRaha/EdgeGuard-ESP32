@@ -40,11 +40,15 @@ const char* faultReason(FaultCode code) {
       return "HC-SR04 timeout 5 times";
     case FaultCode::DHT_AND_ULTRASONIC:
       return "DHT11 failed 5 times; HC-SR04 timeout 5 times";
+    case FaultCode::TASK_WATCHDOG:
+      return "TASK_WATCHDOG: critical task heartbeat timeout";
   }
   return "Unknown fault";
 }
 
-ControlConfig defaultControlConfig() { return ControlConfig{}; }
+ControlConfig defaultControlConfig() {
+  return ControlConfig{};
+}
 
 ControlResult updateControlLogic(const SensorSnapshot& sensor, const SystemSnapshot& previousSystem,
                                  ControlContext& ctx, const ControlConfig& cfg, uint32_t nowMs) {
@@ -54,7 +58,8 @@ ControlResult updateControlLogic(const SensorSnapshot& sensor, const SystemSnaps
   sys.faultCode = FaultCode::NONE;
 
   ctx.dhtFailCount = sensor.dhtOk ? 0 : static_cast<uint8_t>(ctx.dhtFailCount + 1);
-  ctx.ultrasonicFailCount = sensor.distanceOk ? 0 : static_cast<uint8_t>(ctx.ultrasonicFailCount + 1);
+  ctx.ultrasonicFailCount =
+      sensor.distanceOk ? 0 : static_cast<uint8_t>(ctx.ultrasonicFailCount + 1);
 
   const bool dhtFault = ctx.dhtFailCount >= cfg.maxConsecutiveSensorFailures;
   const bool ultrasonicFault = ctx.ultrasonicFailCount >= cfg.maxConsecutiveSensorFailures;
@@ -66,14 +71,15 @@ ControlResult updateControlLogic(const SensorSnapshot& sensor, const SystemSnaps
     sys.faultCode = FaultCode::ULTRASONIC;
   }
 
-  result.instantOccupied = sensor.distanceOk && sensor.distanceCm > 0 &&
-                           sensor.distanceCm <= cfg.occupiedDistanceCm;
+  result.instantOccupied =
+      sensor.distanceOk && sensor.distanceCm > 0 && sensor.distanceCm <= cfg.occupiedDistanceCm;
   if (result.instantOccupied) {
     ctx.lastOccupiedMs = nowMs;
     ctx.hasSeenOccupancy = true;
   }
-  const bool occupiedHeld = result.instantOccupied ||
-                            (ctx.hasSeenOccupancy && (nowMs - ctx.lastOccupiedMs) < cfg.unoccupiedTimeoutMs);
+  const bool occupiedHeld =
+      result.instantOccupied ||
+      (ctx.hasSeenOccupancy && (nowMs - ctx.lastOccupiedMs) < cfg.unoccupiedTimeoutMs);
 
   if (sensor.dhtOk) {
     if (sensor.temperatureC >= cfg.tempAlertOnC) {

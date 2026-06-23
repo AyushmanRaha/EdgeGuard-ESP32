@@ -7,7 +7,7 @@ Install the correct USB serial driver if your board needs one, try a data-capabl
 Install ESP32 board support plus `DHT sensor library` and `Adafruit Unified Sensor`. Confirm the sketch path is `firmware/EdgeGuard_ESP32/EdgeGuard_ESP32.ino`.
 
 ## Dashboard not opening
-Check Serial Monitor for the STA IP address or fallback AP details. Join `EdgeGuard-ESP32` with password `edgeguard123` if Wi-Fi credentials are missing or wrong.
+Check Serial Monitor for the STA IP address or fallback AP details. Join the fallback AP SSID and password configured in `secrets.h` if Wi-Fi credentials are missing or wrong.
 
 ## DHT11 reads null
 Check DATA on GPIO4, power, ground, and any required pull-up. DHT11 is slow; wait between readings.
@@ -22,4 +22,4 @@ If DARK/BRIGHT appears backward, flip `LDR_DARK_WHEN_HIGH` in `config.h` without
 Most relay modules are active-low. If behavior is reversed, change `RELAY_ACTIVE_LOW` in `config.h`.
 
 ## Wi-Fi fallback AP mode
-If STA connection fails, the ESP32 starts `EdgeGuard-ESP32` with password `edgeguard123` and serves the dashboard from the AP IP printed in Serial Monitor.
+If STA connection fails, the ESP32 starts the fallback AP configured in `secrets.h` and serves the dashboard from the AP IP printed in Serial Monitor.

@@ -23,7 +23,7 @@ HC-SR04 Echo (5 V) --- R1 ---+--- ESP32 GPIO18
                             GND
 ```
 
-Use R1 = 2.2 kΩ and R2 = 2.2 kΩ for about 2.5 V at GPIO18, which is safely read as HIGH by the ESP32. If you want closer to 3.0 V, use about R1 = 2.2 kΩ and R2 = 3.2 kΩ. A practical student build can approximate R2 = 3.2 kΩ by wiring 2.2 kΩ + 1 kΩ in series on the lower side.
+Use R1 = 2.2 kΩ and R2 = 2.2 kΩ for about 2.5 V at GPIO18, which is safely read as HIGH by the ESP32. If you want closer to 3.0 V, use about R1 = 2.2 kΩ and R2 = 3.2 kΩ. A practical build can approximate R2 = 3.2 kΩ by wiring 2.2 kΩ + 1 kΩ in series on the lower side.
 
 ## Relay safety
 Relays in this project switch only low-voltage LED loads. Do not use this project as AC mains wiring guidance.

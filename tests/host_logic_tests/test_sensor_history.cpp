@@ -1,0 +1,4 @@
+#include <cassert>
+#include "edgeguard_sensor_history.h"
+static SensorHistoryEntry entry(uint32_t t){ SensorHistoryEntry e; e.timestampMs=t; e.temperatureC=20.0f; e.humidity=50.0f; e.dhtOk=true; e.distanceCm=42; e.distanceOk=true; e.state=State::AUTO_MONITORING; return e; }
+int main(){ EdgeGuardSensorHistory h; SensorHistoryEntry out; assert(h.count()==0); assert(!h.get(0,&out)); assert(!h.get(0,nullptr)); h.push(entry(1)); assert(h.count()==1 && h.get(0,&out) && out.timestampMs==1); for(size_t i=2;i<=EdgeGuardSensorHistory::kCapacity+5;i++) h.push(entry((uint32_t)i)); assert(h.count()==EdgeGuardSensorHistory::kCapacity); assert(h.get(0,&out)); assert(out.timestampMs==6); assert(h.get(EdgeGuardSensorHistory::kCapacity-1,&out)); assert(out.timestampMs==EdgeGuardSensorHistory::kCapacity+5); assert(!h.get(EdgeGuardSensorHistory::kCapacity,&out)); return 0; }

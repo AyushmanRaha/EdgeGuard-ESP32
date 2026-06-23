@@ -1,24 +1,22 @@
-# State machine
+# State Machine
 
-```text
-BOOT -> CALIBRATING -> AUTO_MONITORING
-                         | temp high
-                         v
-                       ALERT
-
-Any mode + repeated sensor failures -> FAULT
-MANUAL mode -> MANUAL_OVERRIDE
-AWAY + nearby occupancy -> ALERT
+```mermaid
+stateDiagram-v2
+  [*] --> BOOT
+  BOOT --> CALIBRATING
+  CALIBRATING --> AUTO_MONITORING
+  AUTO_MONITORING --> ALERT: Temperature high
+  ALERT --> AUTO_MONITORING: Temperature below hysteresis threshold
+  AUTO_MONITORING --> MANUAL_OVERRIDE: Manual mode
+  MANUAL_OVERRIDE --> AUTO_MONITORING: Auto mode
+  AUTO_MONITORING --> ALERT: Away mode + nearby motion
+  ALERT --> AUTO_MONITORING: Away clear
+  AUTO_MONITORING --> FAULT: Repeated sensor failures
+  MANUAL_OVERRIDE --> FAULT: Sensor fault priority
+  ALERT --> FAULT: Sensor fault priority
+  FAULT --> CALIBRATING: Manual fault reset
 ```
 
-## Priority order
-1. FAULT: repeated DHT11 or HC-SR04 failures force both relays off.
-2. MANUAL: dashboard relay buttons preserve selected relay states.
-3. AWAY: nearby occupancy triggers ALERT and Relay 2; otherwise Relay 2 is off.
-4. AUTO: dark plus occupied turns Relay 1 on; temperature alert turns Relay 2 on.
+Priority order: software watchdog fault, repeated sensor faults, manual mode, away alert, temperature alert, normal automatic monitoring. Temperature alert uses hysteresis: latch at `TEMP_ALERT_ON_C`, clear at `TEMP_ALERT_OFF_C`. Occupancy is held until `UNOCCUPIED_TIMEOUT_MS` after the last nearby HC-SR04 reading.
 
-## Transition rules
-- Five consecutive DHT11 failures set FAULT.
-- Five consecutive HC-SR04 timeouts set FAULT.
-- Temperature alert latches on at `TEMP_ALERT_ON_C` and clears at `TEMP_ALERT_OFF_C`.
-- Occupancy is held until `UNOCCUPIED_TIMEOUT_MS` after the last nearby reading.
+Manual fault reset clears counters, clears watchdog state, turns relays off, and returns through calibration. FAULT always forces both relay outputs off.

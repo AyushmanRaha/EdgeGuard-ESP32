@@ -1,15 +1,13 @@
-# Firmware architecture
+# Architecture
 
-EdgeGuard keeps Arduino IDE compatibility while separating testable decisions from hardware IO.
+EdgeGuard separates hardware-facing Arduino code from pure C++ modules that can be compiled on a host machine. The Arduino integration layer owns Wi-Fi/AP fallback, `WebServer` routes, GPIO drivers, DHT11 reads, HC-SR04 timing, LDR reads, and relay writes.
 
-## Arduino integration layer
-`firmware/EdgeGuard_ESP32/EdgeGuard_ESP32.ino` owns Arduino headers, Wi-Fi, WebServer, DHT library use, GPIO reads/writes, FreeRTOS tasks, and HTML/JSON endpoints.
+The RTOS-style task model uses SensorTask, ControlTask, WebTask, and HeartbeatTask. Shared sensor and system snapshots are copied under `gMutex`; slow work such as HTTP response generation and serial output is kept outside critical sections where practical.
 
-## Pure control logic
-`edgeguard_control.cpp` receives `SensorSnapshot`, previous `SystemSnapshot`, `ControlContext`, config, and time in milliseconds. It returns desired state and relay outputs without calling Arduino APIs. This makes FAULT, AUTO, AWAY, MANUAL, hysteresis, and occupancy timeout testable on a laptop.
+Core modules:
+- `edgeguard_control.cpp`: deterministic state machine, hysteresis, occupancy hold, manual mode, away mode, and fault priority.
+- `edgeguard_event_log.cpp`: fixed-capacity severity log.
+- `edgeguard_diagnostics.cpp`: task heartbeat, loop duration, jitter, deadline miss, heap, reset, and Wi-Fi status snapshot.
+- `edgeguard_sensor_history.cpp`: fixed-capacity sample history for JSON and CSV export.
 
-## Event log
-`edgeguard_event_log.cpp` is a fixed-size ring buffer. It avoids heap requirements and works in both host tests and Arduino builds.
-
-## Why host tests are possible
-The decision code depends only on plain C++ types and an injected timestamp. The host build compiles the same `.cpp` files with CMake and assert-based tests.
+API routes expose status, logs, diagnostics, history, and token-protected control endpoints. FAULT remains the highest-priority state and always drives both relay outputs off.
