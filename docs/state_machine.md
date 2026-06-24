@@ -12,3 +12,4 @@ AUTO_MONITORING
 ALERT   MANUAL_OVERRIDE
   ↓       ↓
 FAULT ← sensor failure
+```

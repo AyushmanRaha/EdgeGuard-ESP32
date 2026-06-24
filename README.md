@@ -135,7 +135,21 @@ Full route and field details are in [API documentation](docs/api.md).
 
 ## Dashboard
 
-The local dashboard is served from `/` by the ESP32. It polls the status and log APIs, shows current mode/state, sensor readings, relay states, network details, heap information, and recent events, then provides buttons for mode and relay commands. The planned dashboard screenshot is `media/edgeguard_dashboard_status.png`.
+The local dashboard is served from `/` by the ESP32. It polls the status and log APIs, shows current mode/state, sensor readings, relay states, network details, heap information, and recent events, then provides buttons for mode and relay commands. The screenshots below show the local web dashboard in use.
+
+### Dashboard screenshots
+
+![EdgeGuard dashboard page 1](media/web-page-1.png)
+
+![EdgeGuard dashboard page 2](media/web-page-2.png)
+
+![EdgeGuard dashboard page 3](media/web-page-3.png)
+
+### Prototype images
+
+![EdgeGuard prototype image 1](media/image-1.jpeg)
+
+![EdgeGuard prototype image 2](media/image-2.jpeg)
 
 ## Build and flash
 
