@@ -32,20 +32,6 @@ The design is local-first: the ESP32 hosts the interface itself, so basic monito
 | Fail-safe relay behavior | Fault and stale-sensor paths force both relay outputs off. |
 | Host-side unit tests | Pure control decisions are tested without physical ESP32 hardware. |
 
-## Media placeholders
-
-These media assets are intentionally listed as future capture targets instead of broken image links.
-
-| Future asset | What it should show |
-| --- | --- |
-| `media/edgeguard_hero_build.jpg` | Full assembled prototype on a desk or breadboard with ESP32, sensors, relays, and LEDs visible. |
-| `media/edgeguard_wiring_closeup.jpg` | Close-up wiring view showing GPIO connections, HC-SR04 divider, DHT11, LDR, relay channels, and LEDs. |
-| `media/edgeguard_dashboard_status.png` | Browser dashboard with mode, state, sensor values, relay states, IP, heap, and event log. |
-| `media/edgeguard_serial_monitor.png` | Serial monitor with boot messages, Wi-Fi or AP address, and periodic sensor logs. |
-| Demo video | A release-hosted demo video link will be added later after safe capture and review. |
-
-See [media capture guide](docs/media_guide.md) for framing, safety, and privacy checks.
-
 ## System overview
 
 ```mermaid
