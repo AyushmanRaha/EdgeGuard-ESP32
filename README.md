@@ -151,6 +151,14 @@ The local dashboard is served from `/` by the ESP32. It polls the status and log
 
 ![EdgeGuard prototype image 2](media/image-2.jpeg)
 
+### Serial monitor validation
+
+The Arduino IDE Serial Monitor screenshot below shows live EdgeGuard telemetry at `115200` baud, including DHT11 temperature/humidity readings, HC-SR04 distance readings, LDR state, manual relay commands, relay ON/OFF events, and the transition into `MANUAL_OVERRIDE`.
+
+[![Arduino IDE Serial Monitor showing EdgeGuard ESP32 live sensor telemetry and manual relay override events](docs/media/serial-monitor-manual-relay-validation.png)](docs/media/serial-monitor-manual-relay-validation.png)
+
+*Click the image to open the full-size serial monitor validation screenshot.*
+
 ## Build and flash
 
 ### 1. Prepare configuration
