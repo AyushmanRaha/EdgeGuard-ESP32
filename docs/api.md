@@ -88,3 +88,5 @@ curl -X POST http://192.168.4.1/api/relay1/on
 ## Response and caching notes
 
 JSON and dashboard responses include no-store cache headers where practical so the browser and local clients request fresh state. The API is intended for trusted local networks or the fallback AP during setup; it does not include authentication in the current firmware.
+
+Related: [README API quick reference](../README.md#http-api-quick-reference), [usage guide](usage_implementation_guide.md), and [troubleshooting](troubleshooting.md).

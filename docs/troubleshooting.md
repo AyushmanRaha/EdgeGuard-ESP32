@@ -52,3 +52,5 @@ Confirm TRIG is GPIO 5, ECHO is GPIO 18 through a divider, grounds are common, a
 ## Serial monitor issues
 
 Use `115200` baud. Close duplicate serial sessions before upload. If logs are unreadable, reset the board after opening the monitor.
+
+Related: [hardware guide](hardware.md), [wiring table](../hardware/wiring_table.md), [HTTP API](api.md), and [usage guide](usage_implementation_guide.md).
