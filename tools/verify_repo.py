@@ -30,10 +30,12 @@ REQUIRED = [
     "test/native_stubs/freertos/FreeRTOS.h",
 ]
 FORBIDDEN_PATHS = ["firmware/EdgeGuard_ESP32/secrets" + ".example.h", "firmware/EdgeGuard_ESP32/secrets.h", "docs/" + "inter" + "view_notes.md"]
-FORBIDDEN_PARTS = ["Qual" + "comm", "Nv" + "idia", "NVI" + "DIA", "In" + "tel", "inter" + "view", "jo" + "bs?", "hir" + "ing", "recruit" + "ers?", "built" + " for " + "inter" + "views", "align" + "ed for " + "jo" + "bs"]
+FORBIDDEN_PARTS = ["Qual" + "comm", "Nv" + "idia", "NVI" + "DIA", "In" + "tel", "inter" + "view", "jo" + "bs?", "hir" + "ing", "recruit" + "ers?", "built" + " for " + "inter" + "views", "align" + "ed for " + "jo" + "bs", "port" + "folio", "student" + r"\s+" + "project", "res" + "ume", "curriculum" + r"\s+" + "vitae", "coll" + "ege", "univ" + "ersity", "edgeguard-esp32-rtos-smart-room-node"]
 FORBIDDEN_TERMS = re.compile(r"\b(" + "|".join(FORBIDDEN_PARTS) + r")\b", re.I)
 PLACEHOLDER_OK = {"YOUR_WIFI_NAME", "YOUR_WIFI_PASSWORD", ""}
 TEXT_SUFFIXES = {".md", ".h", ".hpp", ".cpp", ".ino", ".ini", ".yml", ".yaml", ".txt", ".py", ".gitignore"}
+EMAIL_RE = re.compile(r"(?<![\w.+-])[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}(?![\w.-])", re.I)
+PHONE_RE = re.compile(r"(?<!\d)(?:\+?\d{1,3}[ .-]?)?(?:\(?\d{3}\)?[ .-]?)\d{3}[ .-]\d{4}(?!\d)")
 
 
 def tracked_files() -> list[Path]:
@@ -91,7 +93,11 @@ def main() -> int:
         try: text = path.read_text(encoding="utf-8")
         except UnicodeDecodeError: continue
         filtered = "\n".join(line for line in text.splitlines() if not (rel == ".github/workflows/ci.yml" and line.strip() == ("jo" + "bs:")))
-        if FORBIDDEN_TERMS.search(filtered): fail(f"forbidden positioning term in {rel}", failures)
+        if rel != "tools/verify_repo.py" and FORBIDDEN_TERMS.search(filtered): fail(f"forbidden positioning term in {rel}", failures)
+        for email_match in EMAIL_RE.finditer(text):
+            fail(f"possible personal email/contact in {rel}: {email_match.group(0)}", failures)
+        for phone_match in PHONE_RE.finditer(text):
+            fail(f"possible personal phone/contact in {rel}: {phone_match.group(0)}", failures)
         for name in ("WIFI_SSID", "WIFI_PASSWORD"):
             for m in re.finditer(rf"#define\s+{name}\s+\"([^\"]*)\"", text):
                 if m.group(1) not in PLACEHOLDER_OK and rel != "firmware/EdgeGuard_ESP32/wifi_manager.cpp":

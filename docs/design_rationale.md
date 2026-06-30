@@ -31,3 +31,5 @@ Station Wi-Fi is convenient when credentials are available. The fallback AP keep
 ## Limitations and extensions
 
 The current firmware intentionally omits authentication, MQTT, OTA, and cloud integrations. Use trusted lab or isolated local networks unless an authentication layer is deliberately added and documented in a future change.
+
+Related: [architecture guide](architecture.md), [usage guide](usage_implementation_guide.md), and [README safety notes](../README.md#safety-and-limitations).

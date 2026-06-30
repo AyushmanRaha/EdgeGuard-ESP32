@@ -27,3 +27,5 @@ CI uses Python 3.12, installs dependencies from `requirements.txt`, and caches P
 - Native test failure: run `pio test -e native` locally and inspect `test/test_control_logic/test_control_logic.cpp`.
 - Firmware build failure: run `pio run -e esp32doit-devkit-v1` locally with verbose output if needed.
 - Artifact failure: confirm the ESP32 build completed and `.pio/build/esp32doit-devkit-v1/` contains the expected files.
+
+Related: [testing plan](testing_plan.md), [development workflow](development.md), and [`tools/verify_repo.py`](../tools/verify_repo.py).

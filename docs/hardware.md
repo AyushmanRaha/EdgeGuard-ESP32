@@ -46,3 +46,5 @@ Most low-cost relay boards are active-low, so the firmware keeps `RELAY_ACTIVE_L
 Use low-voltage DC prototyping only. Do not place high-voltage loads on a breadboard or exposed relay module. Relay coils and sensors can draw enough current to destabilize USB power; if uploads fail, disconnect external module power while the ESP32 is unpowered, upload, then reconnect the low-voltage circuit.
 
 See the concise [wiring table](../hardware/wiring_table.md) for a quick reference.
+
+Related: [wiring table](../hardware/wiring_table.md), [usage guide](usage_implementation_guide.md), and [`config.h`](../firmware/EdgeGuard_ESP32/config.h).

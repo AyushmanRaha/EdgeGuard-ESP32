@@ -55,3 +55,5 @@ Confirm command responses are `{"ok":true}` and status fields match `docs/api.md
 - Force stale sensor data or repeated sensor failures and confirm `FAULT` with both relays off.
 - Remove station credentials or use placeholders and confirm fallback AP `EdgeGuard-ESP32` is reachable.
 - Capture serial output, dashboard state, and wiring photos only after checking that no credentials are visible.
+
+Related: [HTTP API](api.md), [troubleshooting](troubleshooting.md), and [CI details](ci.md).

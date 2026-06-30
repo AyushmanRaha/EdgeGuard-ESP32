@@ -49,3 +49,5 @@ Copy `firmware/EdgeGuard_ESP32/secrets.h.example` to `firmware/EdgeGuard_ESP32/s
 - Run repository verification, native tests, and the ESP32 firmware build.
 - Update README and relevant docs for behavior, build, route, or safety changes.
 - Confirm `secrets.h`, build artifacts, and local logs are not staged.
+
+Related: [usage guide](usage_implementation_guide.md), [testing plan](testing_plan.md), and [CI details](ci.md).

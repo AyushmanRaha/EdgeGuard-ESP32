@@ -81,3 +81,5 @@ Diagnostics track task heartbeats, sensor failure counters, heap values, reset r
 ## Memory and heap considerations
 
 The firmware uses bounded snapshots and a fixed-size event log. JSON strings reserve capacity before appending fields, and the dashboard is stored as program text. The API exposes both current free heap and minimum observed free heap to help catch regressions during manual validation.
+
+Related: [design rationale](design_rationale.md), [usage guide](usage_implementation_guide.md), and [CI details](ci.md).

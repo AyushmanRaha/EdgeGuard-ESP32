@@ -113,8 +113,8 @@ Station Wi-Fi is optional.
 2. Edit only your local `secrets.h`:
 
    ```cpp
-   #define WIFI_SSID "your-network-name"
-   #define WIFI_PASSWORD "your-network-password"
+   #define WIFI_SSID "YOUR_WIFI_NAME"
+   #define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
    ```
 
 3. Do not commit `firmware/EdgeGuard_ESP32/secrets.h`.
