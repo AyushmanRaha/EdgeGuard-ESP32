@@ -32,6 +32,20 @@ The design is local-first: the ESP32 hosts the interface itself, so basic monito
 | Fail-safe relay behavior | Fault and stale-sensor paths force both relay outputs off. |
 | Host-side unit tests | Pure control decisions are tested without physical ESP32 hardware. |
 
+
+## What you can do with EdgeGuard
+
+With the provided firmware and low-voltage hardware, you can:
+
+- Monitor room temperature and humidity with a DHT11 module.
+- Detect nearby presence with HC-SR04 ultrasonic distance readings.
+- Detect dark or bright conditions with a digital LDR module.
+- Control two low-voltage relay outputs locally.
+- View live sensor, relay, mode, network, heap, and event data from the onboard browser dashboard.
+- Use local HTTP API routes for status, logs, operating mode, and relay commands.
+- Run host-side native tests for the pure control logic without ESP32 hardware.
+- Study a compact ESP32 Arduino/FreeRTOS-style architecture with separated sensor, control, web, heartbeat, diagnostics, and shared-state modules.
+
 ## System overview
 
 ```mermaid
@@ -159,30 +173,16 @@ The Arduino IDE Serial Monitor screenshot below shows live EdgeGuard telemetry a
 
 *Click the image to open the full-size serial monitor validation screenshot.*
 
-## Build and flash
+## Quick Start
 
-### 1. Prepare configuration
+1. Clone or open this repository on your development computer.
+2. Choose either the Arduino IDE workflow or the PlatformIO workflow.
+3. For station Wi-Fi, copy `firmware/EdgeGuard_ESP32/secrets.h.example` to `firmware/EdgeGuard_ESP32/secrets.h` and edit only your local `secrets.h`. Leave placeholders unchanged or omit `secrets.h` to use fallback AP mode.
+4. Build and upload with your chosen workflow: open `firmware/EdgeGuard_ESP32/EdgeGuard_ESP32.ino` in Arduino IDE, or use `pio run -e esp32doit-devkit-v1 -t upload` with PlatformIO.
+5. Open Serial Monitor at `115200` baud.
+6. Open the dashboard at the printed station IP, or connect to fallback AP `EdgeGuard-ESP32` with password `edgeguard123` and open the AP dashboard IP printed by the firmware.
 
-```bash
-cp firmware/EdgeGuard_ESP32/secrets.h.example firmware/EdgeGuard_ESP32/secrets.h
-```
-
-Edit the local `secrets.h` only if station Wi-Fi is needed. Leave placeholders unchanged or omit the file to use fallback AP mode. Never commit `secrets.h`.
-
-### 2. Arduino IDE workflow
-
-Open `firmware/EdgeGuard_ESP32/EdgeGuard_ESP32.ino`, install ESP32 board support and the DHT dependencies, select an ESP32 DevKit target, set Serial Monitor to `115200`, and upload.
-
-### 3. PlatformIO workflow
-
-```bash
-python -m pip install -r requirements.txt
-pio run -e esp32doit-devkit-v1
-pio run -e esp32doit-devkit-v1 -t upload
-pio device monitor -b 115200
-```
-
-When station connection is not available, connect to fallback AP `EdgeGuard-ESP32` with password `edgeguard123` and open `http://192.168.4.1/`.
+For complete setup and implementation instructions, see the [Usage and Implementation Guide](docs/usage_implementation_guide.md).
 
 ## Testing
 
@@ -218,7 +218,7 @@ platformio.ini                   ESP32 and native PlatformIO environments
 - Low-voltage DC prototyping only.
 - No cloud dependency.
 - No built-in authentication; use trusted lab or isolated local networks.
-- No OTA or MQTT in the current firmware; both are future extensions.
+- No OTA, MQTT, or cloud integration in the current firmware.
 - Relay modules vary, so validate polarity with safe low-voltage loads only.
 
 ## Troubleshooting
@@ -227,7 +227,7 @@ Common issues include USB upload instability, fallback AP discovery, stale senso
 
 ## Acknowledgements
 
-This project uses the ESP32 Arduino ecosystem, PlatformIO, FreeRTOS concepts, Adafruit DHT library support, Arduino community resources, and open-source embedded tooling.
+This project uses Arduino-compatible ESP32 firmware tooling, PlatformIO, FreeRTOS concepts, DHT sensor library support, and open-source embedded development tools.
 
 ## License
 
