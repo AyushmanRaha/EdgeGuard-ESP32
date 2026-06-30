@@ -23,6 +23,7 @@ REQUIRED = [
     "firmware/EdgeGuard_ESP32/tasks.cpp",
     "docs/architecture.md", "docs/api.md", "docs/development.md", "docs/hardware.md",
     "docs/ci.md", "docs/testing_plan.md", "docs/design_rationale.md", "docs/troubleshooting.md",
+    "docs/usage_implementation_guide.md",
     "hardware/wiring_table.md",
     "test/test_control_logic/test_control_logic.cpp",
     "test/native_stubs/Arduino.h",
